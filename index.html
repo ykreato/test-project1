@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>UPI QR</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: #ffffff;
+        color: #111111;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 20px;
+    }
+
+    .app {
+        width: 100%;
+        max-width: 380px;
+        text-align: center;
+    }
+
+    /* -------------------------
+       INPUT SCREEN
+    ------------------------- */
+
+    #inputScreen {
+        width: 100%;
+    }
+
+    .logo {
+        width: 72px;
+        height: 72px;
+        object-fit: contain;
+        border-radius: 18px;
+        margin-bottom: 20px;
+    }
+
+    h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        letter-spacing: -0.8px;
+    }
+
+    .subtitle {
+        margin: 0 0 32px;
+        color: #777;
+        font-size: 14px;
+    }
+
+    .field {
+        text-align: left;
+        margin-bottom: 16px;
+    }
+
+    label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 7px;
+    }
+
+    input {
+        width: 100%;
+        height: 54px;
+
+        border: 1px solid #dddddd;
+        border-radius: 13px;
+
+        padding: 0 16px;
+
+        font-size: 16px;
+
+        outline: none;
+
+        background: #fafafa;
+
+        transition: 0.2s;
+    }
+
+    input:focus {
+        border-color: #111;
+        background: #fff;
+    }
+
+    .generate {
+        width: 100%;
+        height: 54px;
+
+        margin-top: 8px;
+
+        border: none;
+        border-radius: 13px;
+
+        background: #111;
+        color: white;
+
+        font-size: 15px;
+        font-weight: 700;
+
+        cursor: pointer;
+    }
+
+    .generate:hover {
+        background: #222;
+    }
+
+
+    /* -------------------------
+       QR SCREEN
+    ------------------------- */
+
+    #qrScreen {
+        display: none;
+        width: 100%;
+    }
+
+    .qr-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 22px;
+    }
+
+    .qr-box {
+        position: relative;
+
+        width: 310px;
+        height: 310px;
+
+        margin: 0 auto;
+
+        padding: 10px;
+
+        background: white;
+
+        border-radius: 18px;
+    }
+
+    #qrcode {
+        width: 290px;
+        height: 290px;
+    }
+
+    #qrcode canvas {
+        width: 290px !important;
+        height: 290px !important;
+    }
+
+    /* Logo inside QR */
+
+ .qr-logo {
+    position: absolute;
+    width: 30%;
+    aspect-ratio: 1 / 1;
+    height: auto;
+
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    background: white;
+    padding: 2%;
+    border-radius: 50%;
+    object-fit: contain;
+}
+
+    .message {
+        color: #777;
+        font-size: 14px;
+
+        margin-top: 5px;
+
+        word-break: break-word;
+    }
+
+    .back {
+        margin-top: 25px;
+
+        border: none;
+        background: transparent;
+
+        color: #777;
+
+        font-size: 14px;
+
+        cursor: pointer;
+    }
+
+    .back:hover {
+        color: #111;
+    }
+
+
+    @media(max-width: 400px) {
+
+        .qr-box {
+            width: 270px;
+            height: 270px;
+        }
+
+        #qrcode {
+            width: 250px;
+            height: 250px;
+        }
+
+        #qrcode canvas {
+            width: 250px !important;
+            height: 250px !important;
+        }
+
+        .qr-logo {
+            width: 52px;
+            height: 52px;
+        }
+    }
+
+</style>
+</head>
+
+
+<body>
+
+<div class="app">
+
+
+    <!-- =========================
+         INPUT SCREEN
+    ========================== -->
+
+    <div id="inputScreen">
+
+        <img
+            src="brand.png"
+            class="logo"
+            alt="Brand"
+        >
+
+        <h1>Payment QR</h1>
+
+        <p class="subtitle">
+            Enter the payment details
+        </p>
+
+
+        <!-- AMOUNT -->
+
+        <div class="field">
+
+            <label for="amount">
+                Amount
+            </label>
+
+            <input
+                id="amount"
+                type="number"
+                inputmode="decimal"
+                placeholder="₹ 0.00"
+                min="1"
+                step="0.01"
+            >
+
+        </div>
+
+
+        <!-- MESSAGE -->
+
+        <div class="field">
+
+            <label for="message">
+                Message
+            </label>
+
+            <input
+                id="message"
+                type="text"
+                placeholder="What is this payment for?"
+                maxlength="100"
+            >
+
+        </div>
+
+
+        <button
+            class="generate"
+            id="generateBtn"
+        >
+            Generate QR
+        </button>
+
+    </div>
+
+
+
+    <!-- =========================
+         QR SCREEN
+    ========================== -->
+
+    <div id="qrScreen">
+
+        <div class="qr-title">
+            Scan to Pay
+        </div>
+
+
+        <div class="qr-box">
+
+            <div id="qrcode"></div>
+
+            <img
+                src="brand.png"
+                class="qr-logo"
+                alt="Brand"
+            >
+
+        </div>
+
+
+        <div
+            class="amount"
+            id="showAmount"
+        >
+        </div>
+
+
+        <div
+            class="message"
+            id="showMessage"
+        >
+        </div>
+
+
+        <button
+            class="back"
+            id="backBtn"
+        >
+            ← Create another QR
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const UPI_ID = "ykreato@upi";
+
+
+const inputScreen =
+    document.getElementById("inputScreen");
+
+const qrScreen =
+    document.getElementById("qrScreen");
+
+const amountInput =
+    document.getElementById("amount");
+
+const messageInput =
+    document.getElementById("message");
+
+const generateBtn =
+    document.getElementById("generateBtn");
+
+const backBtn =
+    document.getElementById("backBtn");
+
+const qrContainer =
+    document.getElementById("qrcode");
+
+
+/* =========================
+   GENERATE QR
+========================= */
+
+generateBtn.addEventListener("click", function () {
+
+    const amount =
+        amountInput.value.trim();
+
+    const message =
+        messageInput.value.trim();
+
+
+    /* Validate amount */
+
+    if (!amount || Number(amount) <= 0) {
+
+        amountInput.focus();
+
+        alert("Please enter a valid amount.");
+
+        return;
+
+    }
+
+
+    /* Build UPI payment URL */
+
+    let upiURL =
+        "upi://pay" +
+        "?pa=" +
+        encodeURIComponent(UPI_ID) +
+        "&am=" +
+        encodeURIComponent(
+            Number(amount).toFixed(2)
+        ) +
+        "&cu=INR";
+
+
+    if (message) {
+
+        upiURL +=
+            "&tn=" +
+            encodeURIComponent(message);
+
+    }
+
+
+    /* Clear old QR */
+
+    qrContainer.innerHTML = "";
+
+
+    /* Generate QR */
+
+    new QRCode(
+        qrContainer,
+        {
+            text: upiURL,
+
+            width: 290,
+            height: 290,
+
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+
+            correctLevel:
+                QRCode.CorrectLevel.H
+        }
+    );
+
+
+    /* Show amount */
+
+    document.getElementById(
+        "showAmount"
+    ).textContent =
+        "₹" +
+        Number(amount).toLocaleString(
+            "en-IN",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+
+
+    /* Show message */
+
+    document.getElementById(
+        "showMessage"
+    ).textContent =
+        message || "Payment";
+
+
+    /* Switch screens */
+
+    inputScreen.style.display = "none";
+
+    qrScreen.style.display = "block";
+
+});
+
+
+/* =========================
+   BACK
+========================= */
+
+backBtn.addEventListener("click", function () {
+
+    qrScreen.style.display = "none";
+
+    inputScreen.style.display = "block";
+
+    amountInput.focus();
+
+});
+
+
+/* =========================
+   ENTER KEY
+========================= */
+
+amountInput.addEventListener("keydown", function (e) {
+
+    if (e.key === "Enter") {
+
+        generateBtn.click();
+
+    }
+
+});
+
+
+messageInput.addEventListener("keydown", function (e) {
+
+    if (e.key === "Enter") {
+
+        generateBtn.click();
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
+
