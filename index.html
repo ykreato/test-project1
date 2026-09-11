@@ -134,11 +134,17 @@
         margin-bottom: 22px;
     }
 
+    /*
+       Responsive QR box.
+       It uses almost all available phone width,
+       while staying at 310px on larger screens.
+    */
+
     .qr-box {
         position: relative;
 
-        width: 310px;
-        height: 310px;
+        width: min(310px, 88vw);
+        aspect-ratio: 1 / 1;
 
         margin: 0 auto;
 
@@ -150,32 +156,46 @@
     }
 
     #qrcode {
-        width: 290px;
-        height: 290px;
+        width: 100%;
+        height: 100%;
     }
 
     #qrcode canvas {
-        width: 290px !important;
-        height: 290px !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
     }
 
     /* Logo inside QR */
 
- .qr-logo {
-    position: absolute;
-    width: 30%;
-    aspect-ratio: 1 / 1;
-    height: auto;
+    .qr-logo {
+        position: absolute;
 
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+        /*
+           Percentage keeps the logo proportional to
+           the QR on desktop AND mobile.
+        */
+        width: 30%;
+        aspect-ratio: 1 / 1;
+        height: auto;
 
-    background: white;
-    padding: 2%;
-    border-radius: 50%;
-    object-fit: contain;
-}
+        left: 50%;
+        top: 50%;
+
+        transform: translate(-50%, -50%);
+
+        background: white;
+        padding: 2%;
+
+        border-radius: 50%;
+        object-fit: contain;
+    }
+
+    .amount {
+        margin-top: 14px;
+        font-size: 22px;
+        font-weight: 700;
+    }
 
     .message {
         color: #777;
@@ -204,26 +224,26 @@
     }
 
 
-    @media(max-width: 400px) {
+    /* -------------------------
+       SMALL MOBILE SCREENS
+    ------------------------- */
+
+    @media (max-width: 360px) {
+
+        body {
+            padding: 16px;
+        }
 
         .qr-box {
-            width: 270px;
-            height: 270px;
+            width: 88vw;
         }
 
-        #qrcode {
-            width: 250px;
-            height: 250px;
+        .qr-title {
+            margin-bottom: 16px;
         }
 
-        #qrcode canvas {
-            width: 250px !important;
-            height: 250px !important;
-        }
-
-        .qr-logo {
-            width: 52px;
-            height: 52px;
+        .back {
+            margin-top: 20px;
         }
     }
 
@@ -441,6 +461,10 @@ generateBtn.addEventListener("click", function () {
         {
             text: upiURL,
 
+            /*
+               Generate at the maximum desktop size.
+               CSS scales it responsively on smaller screens.
+            */
             width: 290,
             height: 290,
 
@@ -529,4 +553,3 @@ messageInput.addEventListener("keydown", function (e) {
 
 </body>
 </html>
-
