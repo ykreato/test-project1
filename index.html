@@ -2,403 +2,918 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b0a0c">
 
 <title>UPI QR</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+
+<script src="script.js"></script>
 
 <style>
-    * {
+    *, *::before, *::after {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
     }
 
-    body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: Arial, sans-serif;
-        background: #ffffff;
-        color: #111111;
+    :root {
+        --gold-100: #fbf3cf;
+        --gold-200: #f5e2a4;
+        --gold-300: #e8cd75;
+        --gold-400: #d4af37;
+        --gold-500: #b8942e;
+        --gold-600: #8f7122;
+        --ink-900: #050506;
+        --ink-800: #0b0a0c;
+        --ink-700: #14121a;
+        --cream: #f5f0e8;
+    }
 
+    html, body { height: 100%; }
+
+    body {
+        min-height: 100vh;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: var(--cream);
+        background: var(--ink-900);
         display: flex;
         align-items: center;
         justify-content: center;
-
         padding: 20px;
+        overflow-x: hidden;
+        position: relative;
+        -webkit-font-smoothing: antialiased;
     }
 
+    /* ---- Background layers ---- */
+    .aura {
+        position: fixed;
+        inset: -20%;
+        z-index: 0;
+        pointer-events: none;
+        background:
+            radial-gradient(circle at 20% 25%, rgba(212, 175, 55, 0.18) 0%, transparent 32%),
+            radial-gradient(circle at 80% 75%, rgba(212, 175, 55, 0.14) 0%, transparent 38%),
+            radial-gradient(circle at 50% 50%, rgba(143, 113, 34, 0.08) 0%, transparent 55%);
+        filter: blur(60px);
+        animation: auraFloat 22s ease-in-out infinite;
+    }
+    @keyframes auraFloat {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33%      { transform: translate(3%, -2%) scale(1.05); }
+        66%      { transform: translate(-2%, 3%) scale(0.98); }
+    }
+
+    .grain {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.05;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
+    }
+
+    .gridlines {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(212, 175, 55, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(212, 175, 55, 0.035) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: radial-gradient(circle at 50% 50%, #000 0%, transparent 75%);
+        -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0%, transparent 75%);
+    }
+
+    /* =========================================
+       MAIN APP CARD
+    ========================================= */
     .app {
+        position: relative;
         width: 100%;
-        max-width: 380px;
+        max-width: 420px;
+        z-index: 2;
+        padding: 44px 34px 42px;
+        border-radius: 40px;
+
+        background: linear-gradient(180deg,
+            rgba(28, 25, 32, 0.72) 0%,
+            rgba(14, 12, 18, 0.82) 100%);
+        backdrop-filter: blur(28px) saturate(170%);
+        -webkit-backdrop-filter: blur(28px) saturate(170%);
+        border: 1px solid rgba(212, 175, 55, 0.22);
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.06) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+            0 40px 80px -20px rgba(0, 0, 0, 0.9),
+            0 0 0 1px rgba(212, 175, 55, 0.06),
+            0 0 60px rgba(212, 175, 55, 0.10);
+
+        transform-style: preserve-3d;
+        transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        will-change: transform;
+        animation: cardEnter 1s cubic-bezier(0.23, 1, 0.32, 1) both;
+    }
+
+    @keyframes cardEnter {
+        0%   { opacity: 0; transform: translateY(28px) scale(0.94); filter: blur(8px); }
+        100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    .app::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 40px;
+        padding: 1px;
+        background: linear-gradient(150deg,
+            rgba(251, 243, 207, 0.55) 0%,
+            rgba(212, 175, 55, 0.15) 25%,
+            transparent 50%,
+            rgba(212, 175, 55, 0.18) 75%,
+            rgba(251, 243, 207, 0.4) 100%);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.9;
+    }
+
+    .app::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 12%;
+        right: 12%;
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(251, 243, 207, 0.7) 50%,
+            transparent 100%);
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    /* =========================================
+       INPUT SCREEN
+    ========================================= */
+    #inputScreen {
+        position: relative;
+        z-index: 1;
         text-align: center;
     }
 
-    /* -------------------------
-       INPUT SCREEN
-    ------------------------- */
+    .brand-wrap {
+        position: relative;
+        width: 92px;
+        height: 92px;
+        margin: 0 auto 22px;
+        display: grid;
+        place-items: center;
+    }
 
-    #inputScreen {
-        width: 100%;
+    .brand-ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        background: conic-gradient(from 0deg,
+            rgba(251, 243, 207, 0.9),
+            rgba(212, 175, 55, 0.4),
+            rgba(143, 113, 34, 0.6),
+            rgba(212, 175, 55, 0.4),
+            rgba(251, 243, 207, 0.9));
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+        animation: ringSpin 8s linear infinite;
+        opacity: 0.85;
+    }
+
+    @keyframes ringSpin {
+        to { transform: rotate(360deg); }
     }
 
     .logo {
-        width: 72px;
-        height: 72px;
+        position: relative;
+        width: 78px;
+        height: 78px;
         object-fit: contain;
-        border-radius: 18px;
-        margin-bottom: 20px;
+        border-radius: 24px;
+        background: linear-gradient(145deg, #16141a, #0b0a0c);
+        padding: 8px;
+        border: 1px solid rgba(212, 175, 55, 0.28);
+        box-shadow:
+            0 12px 28px -8px rgba(0, 0, 0, 0.8),
+            0 0 24px rgba(212, 175, 55, 0.2) inset,
+            0 0 20px rgba(212, 175, 55, 0.15);
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        z-index: 1;
+    }
+
+    .brand-wrap:hover .logo {
+        transform: scale(1.06) rotate(-2deg);
+    }
+
+    .eyebrow {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+        color: rgba(212, 175, 55, 0.7);
+        margin-bottom: 10px;
+        padding-left: 0.42em;
     }
 
     h1 {
-        margin: 0 0 8px;
-        font-size: 28px;
-        letter-spacing: -0.8px;
+        font-family: 'Playfair Display', serif;
+        font-size: 40px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        line-height: 1.05;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg,
+            #fbf3cf 0%,
+            #f5e2a4 25%,
+            #d4af37 55%,
+            #b8942e 80%,
+            #8f7122 100%);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: goldShift 8s ease-in-out infinite;
+        text-shadow: 0 2px 24px rgba(212, 175, 55, 0.15);
+    }
+
+    @keyframes goldShift {
+        0%, 100% { background-position: 0% 50%; }
+        50%      { background-position: 100% 50%; }
     }
 
     .subtitle {
-        margin: 0 0 32px;
-        color: #777;
-        font-size: 14px;
+        font-size: 13.5px;
+        font-weight: 400;
+        color: rgba(245, 240, 232, 0.5);
+        letter-spacing: 0.01em;
+        margin-bottom: 36px;
+        line-height: 1.5;
     }
 
+    .ornament {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 0 auto 32px;
+        width: 100%;
+        max-width: 180px;
+    }
+
+    .ornament-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.5), transparent);
+    }
+
+    .ornament-diamond {
+        width: 6px;
+        height: 6px;
+        background: var(--gold-400);
+        transform: rotate(45deg);
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.7);
+    }
+
+    /* =========================================
+       FIELDS
+    ========================================= */
     .field {
         text-align: left;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .field-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-left: 4px;
+        padding-right: 4px;
     }
 
     label {
-        display: block;
-        font-size: 13px;
-        font-weight: 700;
-        margin-bottom: 7px;
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(212, 175, 55, 0.85);
+    }
+
+    .field-hint {
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        color: rgba(245, 240, 232, 0.25);
+        text-transform: uppercase;
+    }
+
+    .input-wrap {
+        position: relative;
+        border-radius: 18px;
+        padding: 1px;
+        background: linear-gradient(135deg,
+            rgba(212, 175, 55, 0.25),
+            rgba(212, 175, 55, 0.05) 40%,
+            rgba(212, 175, 55, 0.05) 60%,
+            rgba(212, 175, 55, 0.25));
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .input-wrap:focus-within {
+        background: linear-gradient(135deg,
+            rgba(251, 243, 207, 0.9),
+            rgba(212, 175, 55, 0.4) 40%,
+            rgba(212, 175, 55, 0.4) 60%,
+            rgba(251, 243, 207, 0.9));
+        box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1),
+                    0 12px 32px -10px rgba(212, 175, 55, 0.35);
+        transform: translateY(-1px);
+    }
+
+    .input-inner {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: linear-gradient(180deg, rgba(20, 18, 26, 0.9), rgba(11, 10, 12, 0.95));
+        border-radius: 17px;
+        overflow: hidden;
+    }
+
+    .input-prefix {
+        padding: 0 4px 0 20px;
+        font-size: 18px;
+        font-weight: 500;
+        color: rgba(212, 175, 55, 0.75);
+        user-select: none;
+        font-family: 'Playfair Display', serif;
     }
 
     input {
         width: 100%;
-        height: 54px;
-
-        border: 1px solid #dddddd;
-        border-radius: 13px;
-
-        padding: 0 16px;
-
-        font-size: 16px;
-
-        outline: none;
-
-        background: #fafafa;
-
-        transition: 0.2s;
-    }
-
-    input:focus {
-        border-color: #111;
-        background: #fff;
-    }
-
-    .generate {
-        width: 100%;
-        height: 54px;
-
-        margin-top: 8px;
-
+        height: 58px;
+        background: transparent;
         border: none;
-        border-radius: 13px;
+        padding: 0 20px;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--cream);
+        outline: none;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.01em;
+        caret-color: var(--gold-400);
+    }
 
-        background: #111;
-        color: white;
+    .input-inner.has-prefix input {
+        padding-left: 8px;
+    }
 
-        font-size: 15px;
-        font-weight: 700;
+    input::placeholder {
+        color: rgba(245, 240, 232, 0.22);
+        font-weight: 400;
+    }
 
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type=number] { -moz-appearance: textfield; }
+
+    .input-wrap.input-error {
+        background: linear-gradient(135deg,
+            rgba(224, 82, 82, 0.8),
+            rgba(224, 82, 82, 0.3));
+        animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%      { transform: translateX(-8px); }
+        40%      { transform: translateX(8px); }
+        60%      { transform: translateX(-5px); }
+        80%      { transform: translateX(5px); }
+    }
+
+    /* =========================================
+       GENERATE BUTTON
+    ========================================= */
+    .generate {
+        position: relative;
+        width: 100%;
+        height: 60px;
+        margin-top: 16px;
+        border: none;
+        border-radius: 18px;
         cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #0b0a0c;
+
+        background: linear-gradient(135deg,
+            #fbf3cf 0%,
+            #e8cd75 20%,
+            #d4af37 50%,
+            #b8942e 80%,
+            #8f7122 100%);
+        background-size: 200% 200%;
+        animation: goldShift 6s ease-in-out infinite;
+
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.5) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.25) inset,
+            0 18px 40px -14px rgba(212, 175, 55, 0.65),
+            0 0 0 1px rgba(212, 175, 55, 0.35);
+
+        overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        isolation: isolate;
+    }
+
+    .generate::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.55),
+            transparent);
+        transition: left 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        z-index: 1;
     }
 
     .generate:hover {
-        background: #222;
+        transform: translateY(-3px);
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.6) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+            0 28px 56px -16px rgba(212, 175, 55, 0.85),
+            0 0 0 1px rgba(251, 243, 207, 0.6);
+        letter-spacing: 0.22em;
     }
 
+    .generate:hover::before {
+        left: 100%;
+    }
 
-    /* -------------------------
+    .generate:active {
+        transform: scale(0.98) translateY(0);
+    }
+
+    .generate span {
+        position: relative;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .generate svg {
+        width: 14px;
+        height: 14px;
+        transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .generate:hover svg {
+        transform: translateX(4px);
+    }
+
+    /* =========================================
        QR SCREEN
-    ------------------------- */
-
+    ========================================= */
     #qrScreen {
         display: none;
-        width: 100%;
+        position: relative;
+        z-index: 1;
+    }
+
+    #qrScreen.active {
+        display: block;
+        animation: fadeSlide 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    }
+
+    @keyframes fadeSlide {
+        0%   { opacity: 0; transform: translateY(16px) scale(0.97); filter: blur(4px); }
+        100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
     }
 
     .qr-title {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 22px;
+        font-family: 'Playfair Display', serif;
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        text-align: center;
+        background: linear-gradient(135deg, #fbf3cf, #d4af37);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 4px;
     }
 
-    /*
-       Responsive QR box.
-       It uses almost all available phone width,
-       while staying at 310px on larger screens.
-    */
+    .qr-sub {
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: rgba(212, 175, 55, 0.6);
+        text-align: center;
+        margin-bottom: 26px;
+    }
 
+    /* ----- QR BOX (unchanged from ORIGINAL source) ----- */
     .qr-box {
         position: relative;
-
-        width: min(310px, 88vw);
-        aspect-ratio: 1 / 1;
-
+        width: 310px;
+        height: 310px;
         margin: 0 auto;
+        padding: 10px;                    /* ORIGINAL padding */
+        border-radius: 22px;
 
-        padding: 10px;
+        background: #ffffff;              /* WHITE base — critical for QR quiet zone */
+        border: 1px solid rgba(212, 175, 55, 0.35);
+        box-shadow:
+            0 30px 60px -18px rgba(0, 0, 0, 0.9),
+            0 0 50px rgba(212, 175, 55, 0.18),
+            0 0 0 1px rgba(212, 175, 55, 0.1);
+    }
 
-        background: white;
-
-        border-radius: 18px;
+    /* Gold corner brackets */
+    .qr-box::before,
+    .qr-box::after {
+        content: '';
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border: 1.5px solid rgba(212, 175, 55, 0.75);
+        pointer-events: none;
+    }
+    .qr-box::before {
+        top: -1px; left: -1px;
+        border-right: none;
+        border-bottom: none;
+        border-top-left-radius: 22px;
+    }
+    .qr-box::after {
+        bottom: -1px; right: -1px;
+        border-left: none;
+        border-top: none;
+        border-bottom-right-radius: 22px;
     }
 
     #qrcode {
-        width: 100%;
-        height: 100%;
-    }
-
-    #qrcode canvas {
-        width: 100% !important;
-        height: 100% !important;
+        width: 290px;
+        height: 290px;
         display: block;
     }
 
-    /* Logo inside QR */
+    #qrcode canvas,
+    #qrcode img {
+        width: 290px !important;
+        height: 290px !important;
+        display: block;
+    }
 
-    .qr-logo {
+    /* ----- QR LOGO with rotating ring (mirrors home screen) ----- */
+    .qr-logo-wrap {
         position: absolute;
-
-        /*
-           Percentage keeps the logo proportional to
-           the QR on desktop AND mobile.
-        */
-        width: 30%;
+        width: 24.7%;
         aspect-ratio: 1 / 1;
-        height: auto;
-
         left: 50%;
         top: 50%;
-
         transform: translate(-50%, -50%);
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+        z-index: 2;
+    }
 
-        background: white;
-        padding: 2%;
+    .qr-logo-ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg,
+            rgba(251, 243, 207, 0.95),
+            rgba(212, 175, 55, 0.45),
+            rgba(143, 113, 34, 0.65),
+            rgba(212, 175, 55, 0.45),
+            rgba(251, 243, 207, 0.95));
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+        animation: ringSpin 8s linear infinite;
+        /* NO filter — filter kills the animation on some browsers */
+    }
 
+    .qr-logo {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        padding: 7.2px;                  /* 10% less than original 8px */
         border-radius: 50%;
         object-fit: contain;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        z-index: 1;
+    }
+
+    .qr-logo-wrap:hover .qr-logo {
+        transform: scale(1.06);
     }
 
     .amount {
-        margin-top: 14px;
-        font-size: 22px;
-        font-weight: 700;
+        margin-top: 26px;
+        font-family: 'Playfair Display', serif;
+        font-size: 42px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        text-align: center;
+        line-height: 1;
+        background: linear-gradient(135deg,
+            #fbf3cf 0%,
+            #e8cd75 30%,
+            #d4af37 55%,
+            #b8942e 100%);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: goldShift 7s ease-in-out infinite;
     }
 
     .message {
-        color: #777;
-        font-size: 14px;
-
-        margin-top: 5px;
-
+        margin-top: 10px;
+        font-size: 13.5px;
+        font-weight: 400;
+        font-style: italic;
+        color: rgba(245, 240, 232, 0.55);
+        text-align: center;
         word-break: break-word;
+        line-height: 1.5;
+        padding: 0 12px;
+        letter-spacing: 0.005em;
+    }
+
+    .qr-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 28px auto 22px;
+        width: 100%;
+        max-width: 160px;
+    }
+
+    .qr-divider .ornament-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
+    }
+
+    .qr-divider .ornament-diamond {
+        width: 5px;
+        height: 5px;
+        background: var(--gold-400);
+        transform: rotate(45deg);
     }
 
     .back {
-        margin-top: 25px;
-
-        border: none;
-        background: transparent;
-
-        color: #777;
-
-        font-size: 14px;
-
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 0 auto;
+        padding: 13px 26px;
+        border-radius: 999px;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        background: linear-gradient(180deg,
+            rgba(212, 175, 55, 0.08),
+            rgba(212, 175, 55, 0.02));
+        color: rgba(245, 226, 164, 0.95);
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
         cursor: pointer;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .back svg {
+        width: 12px;
+        height: 12px;
+        transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     .back:hover {
-        color: #111;
+        color: #fbf3cf;
+        border-color: rgba(212, 175, 55, 0.7);
+        background: linear-gradient(180deg,
+            rgba(212, 175, 55, 0.18),
+            rgba(212, 175, 55, 0.06));
+        box-shadow: 0 14px 36px -14px rgba(212, 175, 55, 0.5);
+        transform: translateY(-2px);
+        letter-spacing: 0.22em;
     }
 
+    .back:hover svg { transform: translateX(-4px); }
+    .back:active { transform: scale(0.97) translateY(0); }
 
-    /* -------------------------
-       SMALL MOBILE SCREENS
-    ------------------------- */
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+    @media (max-width: 420px) {
+        .app { padding: 36px 24px 34px; border-radius: 34px; }
+        h1 { font-size: 34px; }
+        .brand-wrap { width: 84px; height: 84px; }
+        .logo { width: 70px; height: 70px; border-radius: 22px; }
+
+        .qr-box { width: 270px; height: 270px; }
+        #qrcode,
+        #qrcode canvas,
+        #qrcode img {
+            width: 250px !important;
+            height: 250px !important;
+        }
+        .qr-logo { padding: 6.5px; }
+        .amount { font-size: 36px; }
+        .qr-title { font-size: 22px; }
+    }
 
     @media (max-width: 360px) {
-
-        body {
-            padding: 16px;
+        .app { padding: 30px 18px 28px; border-radius: 30px; }
+        h1 { font-size: 30px; }
+        .qr-box { width: 250px; height: 250px; }
+        #qrcode,
+        #qrcode canvas,
+        #qrcode img {
+            width: 230px !important;
+            height: 230px !important;
         }
-
-        .qr-box {
-            width: 88vw;
-        }
-
-        .qr-title {
-            margin-bottom: 16px;
-        }
-
-        .back {
-            margin-top: 20px;
-        }
+        .qr-logo { padding: 5.5px; }
+        .amount { font-size: 32px; }
+        .generate { height: 56px; font-size: 13px; }
     }
 
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
 </style>
 </head>
 
-
 <body>
 
-<div class="app">
+    <div class="aura"></div>
+    <div class="gridlines"></div>
+    <div class="grain"></div>
 
+    <div class="app" id="appContainer">
 
-    <!-- =========================
-         INPUT SCREEN
-    ========================== -->
+        <!-- =========================
+             INPUT SCREEN
+        ========================== -->
+        <div id="inputScreen">
 
-    <div id="inputScreen">
+            <div class="brand-wrap">
+                <div class="brand-ring"></div>
+                <img src="brand.png" class="logo" alt="Brand">
+            </div>
 
-        <img
-            src="brand.png"
-            class="logo"
-            alt="Brand"
-        >
+            <div class="eyebrow"> ·YKREATO· </div>
+            <h1>Payment QR</h1>
 
-        <h1>Payment QR</h1>
+            <div class="ornament">
+                <div class="ornament-line"></div>
+                <div class="ornament-diamond"></div>
+                <div class="ornament-line"></div>
+            </div>
 
-        <p class="subtitle">
-            Enter the payment details
-        </p>
+            <div class="field">
+                <div class="field-label">
+                    <label for="amount">Amount</label>
+                    <span class="field-hint">INR</span>
+                </div>
+                <div class="input-wrap" id="amountWrap">
+                    <div class="input-inner has-prefix">
+                        <span class="input-prefix">₹</span>
+                        <input
+                            id="amount"
+                            type="number"
+                            inputmode="decimal"
+                            placeholder="0.00"
+                            min="1"
+                            step="0.01"
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+            </div>
 
+            <div class="field">
+                <div class="field-label">
+                    <label for="message">Note</label>
+                    <span class="field-hint">Optional</span>
+                </div>
+                <div class="input-wrap">
+                    <div class="input-inner">
+                        <input
+                            id="message"
+                            type="text"
+                            placeholder="What is this payment for?"
+                            maxlength="100"
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+            </div>
 
-        <!-- AMOUNT -->
-
-        <div class="field">
-
-            <label for="amount">
-                Amount
-            </label>
-
-            <input
-                id="amount"
-                type="number"
-                inputmode="decimal"
-                placeholder="₹ 0.00"
-                min="1"
-                step="0.01"
-            >
+            <button class="generate" id="generateBtn">
+                <span>
+                    Generate QR
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </span>
+            </button>
 
         </div>
 
+        <!-- =========================
+             QR SCREEN
+        ========================== -->
+        <div id="qrScreen">
 
-        <!-- MESSAGE -->
+            <div class="qr-title">Scan to Pay</div>
+            <div class="qr-sub">Point your camera</div>
 
-        <div class="field">
+            <div class="qr-box">
+                <div id="qrcode"></div>
 
-            <label for="message">
-                Message
-            </label>
+                <div class="qr-logo-wrap">
+                    <div class="qr-logo-ring"></div>
+                    <img src="brand.png" class="qr-logo" alt="Brand">
+                </div>
+            </div>
 
-            <input
-                id="message"
-                type="text"
-                placeholder="What is this payment for?"
-                maxlength="100"
-            >
+            <div class="amount" id="showAmount"></div>
+            <div class="message" id="showMessage"></div>
+
+            <div class="qr-divider">
+                <div class="ornament-line"></div>
+                <div class="ornament-diamond"></div>
+                <div class="ornament-line"></div>
+            </div>
+
+            <button class="back" id="backBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Create another
+            </button>
 
         </div>
-
-
-        <button
-            class="generate"
-            id="generateBtn"
-        >
-            Generate QR
-        </button>
 
     </div>
-
-
-
-    <!-- =========================
-         QR SCREEN
-    ========================== -->
-
-    <div id="qrScreen">
-
-        <div class="qr-title">
-            Scan to Pay
-        </div>
-
-
-        <div class="qr-box">
-
-            <div id="qrcode"></div>
-
-            <img
-                src="brand.png"
-                class="qr-logo"
-                alt="Brand"
-            >
-
-        </div>
-
-
-        <div
-            class="amount"
-            id="showAmount"
-        >
-        </div>
-
-
-        <div
-            class="message"
-            id="showMessage"
-        >
-        </div>
-
-
-        <button
-            class="back"
-            id="backBtn"
-        >
-            ← Create another QR
-        </button>
-
-    </div>
-
-</div>
-
 
 <script>
 
 const UPI_ID = "ykreato@upi";
 
-
-const inputScreen =
-    document.getElementById("inputScreen");
-
-const qrScreen =
-    document.getElementById("qrScreen");
-
-const amountInput =
-    document.getElementById("amount");
-
-const messageInput =
-    document.getElementById("message");
-
-const generateBtn =
-    document.getElementById("generateBtn");
-
-const backBtn =
-    document.getElementById("backBtn");
-
-const qrContainer =
-    document.getElementById("qrcode");
+const inputScreen  = document.getElementById("inputScreen");
+const qrScreen     = document.getElementById("qrScreen");
+const amountInput  = document.getElementById("amount");
+const amountWrap   = document.getElementById("amountWrap");
+const messageInput = document.getElementById("message");
+const generateBtn  = document.getElementById("generateBtn");
+const backBtn      = document.getElementById("backBtn");
+const qrContainer  = document.getElementById("qrcode");
+const showAmount   = document.getElementById("showAmount");
+const showMessage  = document.getElementById("showMessage");
+const appCard      = document.getElementById("appContainer");
 
 
 /* =========================
@@ -407,104 +922,53 @@ const qrContainer =
 
 generateBtn.addEventListener("click", function () {
 
-    const amount =
-        amountInput.value.trim();
+    const amount  = amountInput.value.trim();
+    const message = messageInput.value.trim();
 
-    const message =
-        messageInput.value.trim();
-
-
-    /* Validate amount */
-
-    if (!amount || Number(amount) <= 0) {
-
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
         amountInput.focus();
-
-        alert("Please enter a valid amount.");
-
+        amountWrap.classList.add("input-error");
+        setTimeout(() => {
+            amountWrap.classList.remove("input-error");
+        }, 650);
         return;
-
     }
-
-
-    /* Build UPI payment URL */
 
     let upiURL =
         "upi://pay" +
-        "?pa=" +
-        encodeURIComponent(UPI_ID) +
-        "&am=" +
-        encodeURIComponent(
-            Number(amount).toFixed(2)
-        ) +
+        "?pa=" + encodeURIComponent(UPI_ID) +
+        "&am=" + encodeURIComponent(Number(amount).toFixed(2)) +
         "&cu=INR";
 
-
     if (message) {
-
-        upiURL +=
-            "&tn=" +
-            encodeURIComponent(message);
-
+        upiURL += "&tn=" + encodeURIComponent(message);
     }
-
-
-    /* Clear old QR */
 
     qrContainer.innerHTML = "";
 
+    new QRCode(qrContainer, {
+        text: upiURL,
+        width: 290,
+        height: 290,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
 
-    /* Generate QR */
-
-    new QRCode(
-        qrContainer,
-        {
-            text: upiURL,
-
-            /*
-               Generate at the maximum desktop size.
-               CSS scales it responsively on smaller screens.
-            */
-            width: 290,
-            height: 290,
-
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-
-            correctLevel:
-                QRCode.CorrectLevel.H
-        }
-    );
-
-
-    /* Show amount */
-
-    document.getElementById(
-        "showAmount"
-    ).textContent =
+    showAmount.textContent =
         "₹" +
-        Number(amount).toLocaleString(
-            "en-IN",
-            {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }
-        );
+        Number(amount).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
 
-
-    /* Show message */
-
-    document.getElementById(
-        "showMessage"
-    ).textContent =
-        message || "Payment";
-
-
-    /* Switch screens */
+    showMessage.textContent = message || "Payment";
 
     inputScreen.style.display = "none";
+    qrScreen.classList.add("active");
 
-    qrScreen.style.display = "block";
+    appCard.style.transform = "scale(0.995)";
+    setTimeout(() => { appCard.style.transform = "scale(1)"; }, 240);
 
 });
 
@@ -514,13 +978,9 @@ generateBtn.addEventListener("click", function () {
 ========================= */
 
 backBtn.addEventListener("click", function () {
-
-    qrScreen.style.display = "none";
-
+    qrScreen.classList.remove("active");
     inputScreen.style.display = "block";
-
     amountInput.focus();
-
 });
 
 
@@ -529,24 +989,55 @@ backBtn.addEventListener("click", function () {
 ========================= */
 
 amountInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); generateBtn.click(); }
+});
 
-    if (e.key === "Enter") {
-
-        generateBtn.click();
-
-    }
-
+messageInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); generateBtn.click(); }
 });
 
 
-messageInput.addEventListener("keydown", function (e) {
+/* =========================
+   LIVE CLEAR ERROR
+========================= */
 
-    if (e.key === "Enter") {
+amountInput.addEventListener("input", function () {
+    amountWrap.classList.remove("input-error");
+});
 
-        generateBtn.click();
 
-    }
+/* =========================
+   SUBTLE 3D TILT (DESKTOP)
+========================= */
 
+if (window.matchMedia("(pointer: fine)").matches &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+
+    let rafId = null;
+
+    document.addEventListener("mousemove", function (e) {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+            const rect = appCard.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width  - 0.5;
+            const y = (e.clientY - rect.top)  / rect.height - 0.5;
+            appCard.style.transform =
+                `perspective(1500px) rotateY(${x * 1.8}deg) rotateX(${-y * 1.8}deg)`;
+        });
+    });
+
+    document.addEventListener("mouseleave", function () {
+        appCard.style.transform = "perspective(1500px) rotateY(0deg) rotateX(0deg)";
+    });
+}
+
+
+/* =========================
+   FOCUS AMOUNT ON LOAD
+========================= */
+
+window.addEventListener("load", function () {
+    setTimeout(() => amountInput.focus(), 300);
 });
 
 </script>
